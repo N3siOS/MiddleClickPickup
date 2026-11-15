@@ -55,8 +55,8 @@ Requirements:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nesios/MdcPickup.git
-cd MdcPickup
+git clone https://github.com/N3siOS/MiddleClickPickup.git
+cd MiddleClickPickup
 
 # Build (the Gradle wrapper downloads Gradle automatically)
 ./gradlew build
