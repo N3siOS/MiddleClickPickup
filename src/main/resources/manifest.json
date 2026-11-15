@@ -1,0 +1,25 @@
+{
+    "Group": "Nesios",
+    "Name": "MdcPickup",
+    "Version": "1.1.0",
+    "Description": "Enables pick-block in Adventure mode: middle-click a block to select the matching item from your inventory.",
+    "Authors": [
+        {
+            "Name": "Nesios"
+        }
+    ],
+    "Website": "",
+    "ServerVersion": ">=0.7.7 <0.8.0",
+    "Dependencies": {
+        
+    },
+    "OptionalDependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "dev.nesios.mdcpickup.MdcPickupPlugin",
+    "IncludesAssetPack": true,
+    "UpdateChecker": {
+        "CurseForge": ""
+    }
+}
