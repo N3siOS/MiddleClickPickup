@@ -26,7 +26,7 @@ No network packets are intercepted and **no client mod is required**.
 4. On middle-click, the client starts the chain (it sees the mod's interaction as the generic `SimpleBlockInteraction` protocol type, so any vanilla client can run it) and sends the targeted block position.
 5. The server then runs `MdcPickupPickBlockInteraction`:
    - **item already in the hotbar** → that slot becomes the active slot (and the client's hotbar selector is updated through the native `SetActiveSlot` packet);
-   - **otherwise** → one item is moved from storage (then backpack) into an empty hotbar slot, or into the active slot when the hotbar is full (the displaced stack is put back into the inventory; it drops only if the whole inventory is full);
+   - **otherwise** → the whole stack is moved from storage (then backpack) into an empty hotbar slot, or into the active slot when the hotbar is full (the displaced stack is put back into the inventory; it drops only if the whole inventory is full);
    - **item owned nowhere** → nothing happens.
 
 All mutations go through the native ECS inventory components (`InventoryComponent.Hotbar/Storage/Backpack`, `setActiveSlot`, `addOrDropItemStack`), so client sync (inventory, equipment, active slot) is the game's own, with no extra code.

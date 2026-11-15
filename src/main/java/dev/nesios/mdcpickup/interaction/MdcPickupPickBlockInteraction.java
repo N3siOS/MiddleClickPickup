@@ -38,8 +38,8 @@ import java.util.logging.Level;
  * <ul>
  *   <li>If the target block's item is already in the hotbar, the matching
  *       slot becomes the active slot.</li>
- *   <li>Otherwise one item is moved from storage (then backpack) into an
- *       empty hotbar slot, or into the active slot when the hotbar is full
+ *   <li>Otherwise the whole stack is moved from storage (then backpack) into
+ *       an empty hotbar slot, or into the active slot when the hotbar is full
  *       (the displaced stack is put back into storage and drops only if the
  *       whole inventory is full).</li>
  *   <li>If the player owns the item nowhere, nothing happens.</li>
@@ -175,7 +175,7 @@ public final class MdcPickupPickBlockInteraction extends SimpleBlockInteraction 
     }
 
     /**
-     * Moves one item from the given source slot into the hotbar.
+     * Moves the whole stack from the given source slot into the hotbar.
      */
     private static boolean pickFromSlot(@Nonnull final CommandBuffer<EntityStore> commandBuffer,
                                         @Nonnull final Ref<EntityStore> ref,
@@ -184,25 +184,27 @@ public final class MdcPickupPickBlockInteraction extends SimpleBlockInteraction 
                                         @Nonnull final ItemStack sourceStack,
                                         @Nonnull final InventoryComponent.Hotbar hotbarComponent,
                                         @Nonnull final ItemContainer hotbar) {
-        final var toMove = sourceStack.withQuantity(1);
+        // The stack comes from an inventory slot, so it cannot exceed the
+        // item's max stack size and always fits an empty hotbar slot.
+        final var fullStack = sourceStack;
 
         // Preferred target: an empty hotbar slot.
         for (short slot = 0; slot < hotbar.getCapacity(); slot++) {
             if (!ItemStack.isEmpty(hotbar.getItemStack(slot))) continue;
 
-            final var removeTransaction = source.removeItemStackFromSlot(sourceSlot, sourceStack, 1);
+            final var removeTransaction = source.removeItemStackFromSlot(sourceSlot, sourceStack, fullStack.getQuantity());
             if (!removeTransaction.succeeded()) return false;
 
-            final var addTransaction = hotbar.addItemStackToSlot(slot, toMove);
+            final var addTransaction = hotbar.addItemStackToSlot(slot, fullStack, true, true);
             if (!addTransaction.succeeded()) {
-                // Rollback: put the item back where it came from.
-                SimpleItemContainer.addOrDropItemStack(commandBuffer, ref, source, sourceSlot, toMove);
+                // Rollback: put the stack back where it came from.
+                SimpleItemContainer.addOrDropItemStack(commandBuffer, ref, source, sourceSlot, fullStack);
                 return false;
             }
 
             hotbarComponent.setActiveSlot((byte) slot, ref, commandBuffer);
             syncActiveSlotToClient(commandBuffer, ref, hotbarComponent);
-            LOGGER.at(Level.FINE).log("Pick block: moved 1x '%s' into hotbar slot %d", toMove.getItemId(), slot);
+            LOGGER.at(Level.FINE).log("Pick block: moved %dx '%s' into hotbar slot %d", fullStack.getQuantity(), fullStack.getItemId(), slot);
             return true;
         }
 
@@ -213,12 +215,12 @@ public final class MdcPickupPickBlockInteraction extends SimpleBlockInteraction 
         final var activeStack = hotbar.getItemStack(activeSlot);
         if (ItemStack.isEmpty(activeStack)) return false;
 
-        final var removeTransaction = source.removeItemStackFromSlot(sourceSlot, sourceStack, 1);
+        final var removeTransaction = source.removeItemStackFromSlot(sourceSlot, sourceStack, fullStack.getQuantity());
         if (!removeTransaction.succeeded()) return false;
 
-        final var replaceTransaction = hotbar.replaceItemStackInSlot(activeSlot, activeStack, toMove);
+        final var replaceTransaction = hotbar.replaceItemStackInSlot(activeSlot, activeStack, fullStack);
         if (!replaceTransaction.succeeded()) {
-            SimpleItemContainer.addOrDropItemStack(commandBuffer, ref, source, sourceSlot, toMove);
+            SimpleItemContainer.addOrDropItemStack(commandBuffer, ref, source, sourceSlot, fullStack);
             return false;
         }
 
@@ -229,7 +231,7 @@ public final class MdcPickupPickBlockInteraction extends SimpleBlockInteraction 
         // The active slot itself did not change, but its content did: re-assert
         // it so the client re-reads the slot and refreshes the held item.
         syncActiveSlotToClient(commandBuffer, ref, hotbarComponent);
-        LOGGER.at(Level.FINE).log("Pick block: swapped 1x '%s' into active hotbar slot %d", toMove.getItemId(), activeSlot);
+        LOGGER.at(Level.FINE).log("Pick block: swapped %dx '%s' into active hotbar slot %d", fullStack.getQuantity(), fullStack.getItemId(), activeSlot);
         return true;
     }
 
